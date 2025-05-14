@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Submit Your Profile | UKnown</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background-color: #0f0f0f;
+      color: #fff;
+      padding: 2rem;
+      max-width: 600px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    label {
+      display: block;
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.25rem;
+      border-radius: 5px;
+      border: none;
+      background-color: #1c1c1c;
+      color: #fff;
+    }
+    button {
+      margin-top: 1.5rem;
+      padding: 0.75rem 1.5rem;
+      background-color: #fff;
+      color: #0f0f0f;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #ccc;
+    }
+    .error {
+      color: #ff6b6b;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Submit Your Profile</h1>
+  <form id="submitForm">
+    <label for="firstName">First Name</label>
+    <input id="firstName" name="firstName" required />
+
+    <label for="lastName">Last Name</label>
+    <input id="lastName" name="lastName" required />
+
+    <label for="category">Category</label>
+    <select id="category" name="category" required>
+      <option value="">Choose one</option>
+      <option value="Artist">Artist</option>
+      <option value="Chef / Culinary Artist">Chef / Culinary Artist</option>
+      <option value="Content Creator">Content Creator</option>
+      <option value="Designer">Designer</option>
+      <option value="Developer">Developer</option>
+      <option value="Entrepreneur">Entrepreneur</option>
+      <option value="Filmmaker">Filmmaker</option>
+      <option value="Model">Model</option>
+      <option value="Musician">Musician</option>
+      <option value="Photographer">Photographer</option>
+      <option value="Voice Actor / Podcaster">Voice Actor / Podcaster</option>
+      <option value="Other">Other</option>
+    </select>
+
+    <label for="bio">Short Bio</label>
+    <textarea id="bio" name="bio" rows="4" required></textarea>
+
+    <label for="link">Portfolio or Social Link</label>
+    <input id="link" name="link" required />
+
+    <label for="images">Upload Images (up to 3)</label>
+    <input type="file" id="images" name="images" accept="image/*" multiple />
+
+    <label for="video">Upload Video (max 10s)</label>
+    <input type="file" id="video" name="video" accept="video/*" />
+
+    <button type="submit">Submit</button>
+    <p id="error" class="error hidden"></p>
+  </form>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-storage.js";
+
+    // TODO: Replace with your Firebase config
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    const submitForm = document.getElementById("submitForm");
+    const errorEl = document.getElementById("error");
+
+    submitForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errorEl.classList.add("hidden");
+      errorEl.textContent = "";
+
+      const firstName = document.getElementById("firstName").value.trim();
+      const lastName = document.getElementById("lastName").value.trim();
+      const category = document.getElementById("category").value;
+      const bio = document.getElementById("bio").value.trim();
+      const link = document.getElementById("link").value.trim();
+      const images = document.getElementById("images").files;
+      const video = document.getElementById("video").files[0];
+
+      // Validation
+      if (!firstName || !lastName || !category) {
+        errorEl.textContent = "First name, last name, and category are required.";
+        errorEl.classList.remove("hidden");
+        return;
+      }
+      if ((images.length === 0) && !video) {
+        errorEl.textContent = "Please upload at least one image or a video.";
+        errorEl.classList.remove("hidden");
+        return;
+      }
+      if (images.length > 3) {
+        errorEl.textContent = "You can upload a maximum of 3 images.";
+        errorEl.classList.remove("hidden");
+        return;
+      }
+
+      try {
+        // Upload media files
+        const uploads = [];
+        const timestamp = Date.now();
+        for (let i = 0; i < images.length; i++) {
+          const img = images[i];
+          const imgRef = ref(storage, `profiles/${timestamp}_${img.name}`);
+          await uploadBytes(imgRef, img);
+          uploads.push(getDownloadURL(imgRef));
+        }
+        let videoURL = "";
+        if (video) {
+          const vidRef = ref(storage, `profiles/${timestamp}_${video.name}`);
+          await uploadBytes(vidRef, video);
+          videoURL = await getDownloadURL(vidRef);
+        }
+        const imageUrls = await Promise.all(uploads);
+
+        // Save profile data
+        await addDoc(collection(db, "profiles"), {
+          firstName,
+          lastName,
+          category,
+          bio,
+          link,
+          images: imageUrls,
+          video: videoURL,
+          createdAt: new Date()
+        });
+
+        alert("Profile submitted successfully!");
+        submitForm.reset();
+      } catch (err) {
+        console.error("Submission error:", err);
+        errorEl.textContent = "Something went wrong. Please try again.";
+        errorEl.classList.remove("hidden");
+      }
+    });
+  </script>
+</body>
+</html>
