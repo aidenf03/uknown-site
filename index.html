@@ -9,6 +9,18 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --animation-duration: 1.2s;
+      --stagger-delay: 0.3s;
+    }
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
     body {
       font-family: 'Space Grotesk', sans-serif;
       background-color: #0f0f0f;
@@ -16,20 +28,26 @@
       padding: 2rem;
       margin: 0;
       text-align: center;
+      overflow-x: hidden;
     }
     .logo {
       font-size: 2rem;
       font-weight: bold;
       margin-bottom: 2rem;
+      animation: fadeInDown var(--animation-duration) ease-out;
     }
     h1 {
       font-size: 3rem;
       margin-bottom: 1rem;
+      animation: fadeInDown var(--animation-duration) ease-out var(--stagger-delay);
+      animation-fill-mode: both;
     }
     p {
       font-size: 1.3rem;
       color: #ccc;
       margin-bottom: 2rem;
+      animation: fadeIn var(--animation-duration) ease-out calc(var(--stagger-delay) * 2);
+      animation-fill-mode: both;
     }
     .buttons {
       display: inline-block;
@@ -47,6 +65,9 @@
       border-radius: 6px;
       transition: all 0.3s ease;
       font-size: 1rem;
+      opacity: 0;
+      animation: fadeIn var(--animation-duration) ease-out calc(var(--stagger-delay) * 3);
+      animation-fill-mode: both;
     }
     .buttons a:hover {
       background-color: #fff;
@@ -55,6 +76,9 @@
     .buttons .about-link {
       display: block;
       margin-top: 2rem;
+      opacity: 0;
+      animation: fadeIn var(--animation-duration) ease-out calc(var(--stagger-delay) * 4);
+      animation-fill-mode: both;
     }
     .buttons .about-link a {
       font-size: 0.9rem;
@@ -65,7 +89,7 @@
       padding: 0;
     }
 
-    /* Mobile: vertical stack */
+    /* Mobile vertical stack */
     @media (max-width: 600px) {
       .buttons {
         display: flex;
