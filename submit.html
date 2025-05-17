@@ -137,7 +137,60 @@
 
     submitForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      // Submission logic goes here...
+      errorEl.textContent = "";
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("signupPassword").value;
+      const firstName = document.getElementById("firstName").value.trim();
+      const lastName = document.getElementById("lastName").value.trim();
+      const category = document.getElementById("category").value;
+      const bio = document.getElementById("bio").value.trim();
+      const link = document.getElementById("link").value.trim();
+      const images = document.getElementById("images").files;
+      const video = document.getElementById("video").files[0];
+
+      if (!images.length && !video) {
+        errorEl.textContent = "Please upload at least one image or a video.";
+        return;
+      }
+
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const uploads = [];
+        const timestamp = Date.now();
+        for (let i = 0; i < images.length; i++) {
+          const img = images[i];
+          const imgRef = ref(storage, `profiles/${userCredential.user.uid}/${timestamp}_${img.name}`);
+          await uploadBytes(imgRef, img);
+          uploads.push(getDownloadURL(imgRef));
+        }
+        let videoURL = "";
+        if (video) {
+          const vidRef = ref(storage, `profiles/${userCredential.user.uid}/${timestamp}_${video.name}`);
+          await uploadBytes(vidRef, video);
+          videoURL = await getDownloadURL(vidRef);
+        }
+        const imageUrls = await Promise.all(uploads);
+
+        await addDoc(collection(db, "profiles"), {
+          uid: userCredential.user.uid,
+          email,
+          firstName,
+          lastName,
+          category,
+          bio,
+          link,
+          images: imageUrls,
+          video: videoURL,
+          approved: false,
+          createdAt: new Date()
+        });
+
+        alert("Profile submitted and account created!");
+        window.location.href = "/members.html";
+      } catch (err) {
+        errorEl.textContent = err.message;
+      }
     });
   </script>
 </body>
