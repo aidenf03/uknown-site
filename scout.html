@@ -1,0 +1,170 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Scout Signup | UKnown</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet"/>
+  <style>
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background-color: #0f0f0f;
+      color: #fff;
+      padding: 2rem;
+      max-width: 600px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    label {
+      display: block;
+      margin-top: 1rem;
+      font-weight: bold;
+      font-size: 1rem;
+    }
+    .small-text {
+      font-size: 0.75rem;
+      font-weight: normal;
+      color: #ccc;
+      margin-left: 0.25rem;
+    }
+    input, select {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.25rem;
+      border-radius: 5px;
+      border: none;
+      background-color: #1c1c1c;
+      color: #fff;
+      font-size: 1rem;
+    }
+    select[multiple] {
+      height: auto;
+    }
+    button {
+      margin-top: 1.5rem;
+      padding: 0.75rem 1.5rem;
+      background-color: #fff;
+      color: #0f0f0f;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    button:hover {
+      background-color: #ccc;
+    }
+    .error {
+      color: #ff6b6b;
+      margin-top: 1rem;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Scout Signup</h1>
+  <form id="scoutForm">
+    <label for="email">Email</label>
+    <input type="email" id="email" required/>
+
+    <label for="signupPassword">
+      Password<span class="small-text">(minimum 8 characters)</span>
+    </label>
+    <input type="password" id="signupPassword" required minlength="8"/>
+
+    <label for="firstName">First Name</label>
+    <input id="firstName" required/>
+
+    <label for="lastName">Last Name</label>
+    <input id="lastName" required/>
+
+    <label for="instagram">Instagram or X Link</label>
+    <input type="url" id="instagram" placeholder="https://instagram.com/yourprofile" />
+
+    <label for="linkedin">LinkedIn Profile</label>
+    <input type="url" id="linkedin" placeholder="https://linkedin.com/in/yourprofile" />
+
+    <label for="categories">
+      Select up to 3 Categories<span class="small-text">(hold Ctrl/Cmd to select multiple)</span>
+    </label>
+    <select id="categories" multiple required>
+      <option value="Artist">Artist</option>
+      <option value="Chef / Culinary Artist">Chef / Culinary Artist</option>
+      <option value="Content Creator">Content Creator</option>
+      <option value="Designer">Designer</option>
+      <option value="Developer">Developer</option>
+      <option value="Entrepreneur">Entrepreneur</option>
+      <option value="Filmmaker">Filmmaker</option>
+      <option value="Model">Model</option>
+      <option value="Musician">Musician</option>
+      <option value="Photographer">Photographer</option>
+      <option value="Voice Actor / Podcaster">Voice Actor / Podcaster</option>
+    </select>
+
+    <button type="submit">Submit</button>
+    <p id="error" class="error"></p>
+  </form>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+    // TODO: Replace with your Firebase config
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const form = document.getElementById("scoutForm");
+    const errorEl = document.getElementById("error");
+
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      errorEl.textContent = "";
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("signupPassword").value;
+      const firstName = document.getElementById("firstName").value.trim();
+      const lastName = document.getElementById("lastName").value.trim();
+      const instagram = document.getElementById("instagram").value.trim();
+      const linkedin = document.getElementById("linkedin").value.trim();
+      const selected = Array.from(document.getElementById("categories").selectedOptions).map(o => o.value);
+
+      if (selected.length === 0 || selected.length > 3) {
+        errorEl.textContent = "Please select 1-3 categories.";
+        return;
+      }
+
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await addDoc(collection(db, "scouts"), {
+          uid: userCredential.user.uid,
+          email,
+          firstName,
+          lastName,
+          instagram,
+          linkedin,
+          categories: selected,
+          createdAt: new Date()
+        });
+        alert("Scout account created!");
+        window.location.href = "/browse.html";
+      } catch (err) {
+        errorEl.textContent = err.message;
+      }
+    });
+  </script>
+</body>
+</html>
